@@ -719,6 +719,157 @@
       justify-content: center;
       height: 36px;
     }
+
+    /* ── Tour button in header ─────────────────────────────── */
+    .tour-btn-header {
+      height: 28px;
+      padding: 0 12px;
+      border: 1.5px solid var(--ms-border);
+      border-radius: 20px;
+      background: var(--ms-white);
+      color: var(--ms-gray);
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--font);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: border-color .15s, color .15s;
+      flex-shrink: 0;
+    }
+
+    .tour-btn-header:hover { border-color: var(--ms-red); color: var(--ms-red); }
+
+    /* ── Tour overlay + card ───────────────────────────────── */
+    #tour-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 900;
+      pointer-events: none;
+    }
+
+    #tour-overlay.active { pointer-events: all; }
+
+    /* Spotlight: transparent hole over the highlighted element */
+    #tour-spotlight {
+      position: fixed;
+      z-index: 901;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,.45);
+      border-radius: 6px;
+      transition: all .25s ease;
+      pointer-events: none;
+    }
+
+    #tour-card {
+      position: fixed;
+      z-index: 902;
+      background: var(--ms-dark);
+      color: #fff;
+      border-radius: 12px;
+      padding: 18px 20px 14px;
+      width: 290px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.35);
+      transition: left .25s ease, top .25s ease, opacity .15s;
+    }
+
+    #tour-card.hidden { opacity: 0; pointer-events: none; }
+
+    .tour-step-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--ms-red);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 6px;
+    }
+
+    .tour-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .tour-desc {
+      font-size: 12px;
+      color: rgba(255,255,255,.75);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .tour-desc strong { color: #fff; font-weight: 600; }
+
+    .tour-dots {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .tour-dot {
+      height: 5px;
+      width: 5px;
+      border-radius: 3px;
+      background: rgba(255,255,255,.25);
+      transition: width .2s, background .2s;
+    }
+
+    .tour-dot.active { width: 16px; background: var(--ms-red); }
+
+    .tour-nav {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tour-skip {
+      flex: 1;
+      background: none;
+      border: none;
+      color: rgba(255,255,255,.35);
+      font-size: 11px;
+      font-family: var(--font);
+      cursor: pointer;
+      padding: 0;
+      text-align: left;
+      transition: color .15s;
+    }
+
+    .tour-skip:hover { color: rgba(255,255,255,.65); }
+
+    .tour-prev {
+      height: 30px;
+      padding: 0 14px;
+      background: rgba(255,255,255,.12);
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 12px;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: background .15s;
+    }
+
+    .tour-prev:hover { background: rgba(255,255,255,.22); }
+    .tour-prev:disabled { opacity: 0.3; cursor: default; }
+
+    .tour-next {
+      height: 30px;
+      padding: 0 16px;
+      background: var(--ms-red);
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: background .15s;
+    }
+
+    .tour-next:hover { background: var(--ms-red-dark); }
   </style>
 </head>
 <body>
@@ -737,6 +888,12 @@
       </a>
       <div class="divider"></div>
       <span class="page-title">MapSwipe Locate Project's Tutorial Scenario Page Builder</span>
+      <button class="tour-btn-header" id="tour-start-btn" style="margin-left:auto">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        How to use
+      </button>
     </div>
   </header>
 
@@ -829,6 +986,21 @@
         </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ── Tour ── -->
+  <div id="tour-overlay"></div>
+  <div id="tour-spotlight"></div>
+  <div id="tour-card" class="hidden">
+    <div class="tour-step-label" id="tour-step-label">Step 1 of 6</div>
+    <div class="tour-title"     id="tour-title"></div>
+    <div class="tour-desc"      id="tour-desc"></div>
+    <div class="tour-dots"      id="tour-dots"></div>
+    <div class="tour-nav">
+      <button class="tour-skip" id="tour-skip">Skip tour</button>
+      <button class="tour-prev" id="tour-prev">← Back</button>
+      <button class="tour-next" id="tour-next">Next →</button>
     </div>
   </div>
 
@@ -1115,6 +1287,155 @@
     }
     map.on('zoom', updateZoomBadge);
     map.on('move', () => document.getElementById('feature-popup').classList.remove('visible'));
+
+    // ── Tour ──────────────────────────────────────────────────
+    const TOUR_STEPS = [
+      {
+        title: 'Load Imagery',
+        desc:  'Paste an <strong>OpenAerialMap (OAM)</strong> tile URL into the TMS field and click <strong>Load</strong> to display the satellite imagery on the map.',
+        target: () => document.getElementById('tms-url'),
+        side: 'bottom'
+      },
+      {
+        title: 'Load Processed Tasks GeoJSON',
+        desc:  'In MapSwipe, open the <strong>Locate project tutorial edit page</strong> → <strong>Processed Tasks</strong> section, download the GeoJSON file, then load it here using the <strong>"Load file"</strong> button.',
+        target: () => document.getElementById('geojson-btn'),
+        side: 'bottom'
+      },
+      {
+        title: 'Select Features on the Map',
+        desc:  'Click on grid cells that <strong>contain the target feature</strong> — e.g. solar panels, trees, or solid waste. A popup will appear showing that cell\'s properties.',
+        target: () => document.getElementById('map'),
+        side: 'center'
+      },
+      {
+        title: 'Add Features to Tutorial List',
+        desc:  'In the popup, click <strong>"Add to Tutorial"</strong> for each relevant grid cell. Repeat until the right panel contains a representative set of scenario pages.',
+        target: () => document.getElementById('tutorial-panel'),
+        side: 'left'
+      },
+      {
+        title: 'Set Sub Grid Size',
+        desc:  'Choose <strong>2×2, 4×4, or 8×8</strong> to match the sub-grid configuration of your MapSwipe Locate project. This controls the size of the <em>references</em> array in each feature.',
+        target: () => document.querySelector('input[name="subgrid"]').closest('.tms-type-toggle'),
+        side: 'bottom'
+      },
+      {
+        title: 'Download & Upload to MapSwipe',
+        desc:  'Click <strong>"Download Scenario Pages as .geojson"</strong>, then import the downloaded file into the <strong>Locate project tutorial edit page</strong> in MapSwipe.',
+        target: () => document.getElementById('download-btn'),
+        side: 'top'
+      }
+    ];
+
+    let tourStep = 0;
+
+    function tourSpotlight(el) {
+      const sp  = document.getElementById('tour-spotlight');
+      if (!el) { sp.style.display = 'none'; return; }
+      const r   = el.getBoundingClientRect();
+      const PAD = 6;
+      sp.style.display  = 'block';
+      sp.style.left     = (r.left   - PAD) + 'px';
+      sp.style.top      = (r.top    - PAD) + 'px';
+      sp.style.width    = (r.width  + PAD * 2) + 'px';
+      sp.style.height   = (r.height + PAD * 2) + 'px';
+    }
+
+    function tourPosition(el, side) {
+      const card = document.getElementById('tour-card');
+      const CW   = card.offsetWidth  || 290;
+      const CH   = card.offsetHeight || 200;
+      const GAP  = 16;
+      const VW   = window.innerWidth;
+      const VH   = window.innerHeight;
+
+      if (!el || side === 'center') {
+        card.style.left = Math.round(VW / 2 - CW / 2) + 'px';
+        card.style.top  = Math.round(VH / 2 - CH / 2) + 'px';
+        return;
+      }
+
+      const r    = el.getBoundingClientRect();
+      let left, top;
+
+      if (side === 'bottom') {
+        left = r.left + r.width / 2 - CW / 2;
+        top  = r.bottom + GAP;
+        if (top + CH > VH - GAP) { top = r.top - CH - GAP; }
+      } else if (side === 'top') {
+        left = r.left + r.width / 2 - CW / 2;
+        top  = r.top - CH - GAP;
+        if (top < GAP) { top = r.bottom + GAP; }
+      } else if (side === 'left') {
+        left = r.left - CW - GAP;
+        top  = r.top + r.height / 2 - CH / 2;
+        if (left < GAP) { left = r.right + GAP; }
+      } else {
+        left = r.right + GAP;
+        top  = r.top + r.height / 2 - CH / 2;
+        if (left + CW > VW - GAP) { left = r.left - CW - GAP; }
+      }
+
+      card.style.left = Math.max(GAP, Math.min(left, VW - CW - GAP)) + 'px';
+      card.style.top  = Math.max(GAP, Math.min(top,  VH - CH - GAP)) + 'px';
+    }
+
+    function tourRender() {
+      const step  = TOUR_STEPS[tourStep];
+      const total = TOUR_STEPS.length;
+      const card  = document.getElementById('tour-card');
+      const el    = step.target();
+
+      document.getElementById('tour-step-label').textContent = `Step ${tourStep + 1} of ${total}`;
+      document.getElementById('tour-title').textContent      = step.title;
+      document.getElementById('tour-desc').innerHTML         = step.desc;
+
+      // Dots
+      document.getElementById('tour-dots').innerHTML = TOUR_STEPS
+        .map((_, i) => `<div class="tour-dot${i === tourStep ? ' active' : ''}"></div>`)
+        .join('');
+
+      document.getElementById('tour-prev').disabled = tourStep === 0;
+      document.getElementById('tour-next').textContent = tourStep === total - 1 ? 'Done ✓' : 'Next →';
+
+      // Show card off-screen to measure height before positioning
+      card.style.visibility = 'hidden';
+      card.classList.remove('hidden');
+      tourSpotlight(el);
+
+      requestAnimationFrame(() => {
+        tourPosition(el, step.side);
+        card.style.visibility = 'visible';
+      });
+    }
+
+    function tourStart() {
+      // Resume from the last step; only resets after completing the tour
+      document.getElementById('tour-overlay').classList.add('active');
+      tourRender();
+    }
+
+    function tourEnd() {
+      document.getElementById('tour-card').classList.add('hidden');
+      document.getElementById('tour-spotlight').style.display = 'none';
+      document.getElementById('tour-overlay').classList.remove('active');
+    }
+
+    document.getElementById('tour-start-btn').addEventListener('click', tourStart);
+    document.getElementById('tour-skip').addEventListener('click', tourEnd);
+
+    document.getElementById('tour-prev').addEventListener('click', () => {
+      if (tourStep > 0) { tourStep--; tourRender(); }
+    });
+
+    document.getElementById('tour-next').addEventListener('click', () => {
+      if (tourStep < TOUR_STEPS.length - 1) { tourStep++; tourRender(); }
+      else { tourEnd(); tourStep = 0; } // completed — restart from step 1 next time
+    });
+
+    // Click on the dimmed overlay (outside spotlight) closes the tour
+    document.getElementById('tour-overlay').addEventListener('click', tourEnd);
 
 
     // ── GeoJSON layer management ──────────────────────────────
@@ -1484,6 +1805,7 @@
     map.on('load', () => {
       updateZoomBadge();
       initGeoJSONLayers();
+      tourStart(); // show the guide on first load
 
       // Auto-load the default project geometry
       fetch('processed_geometry (1).geojson')
