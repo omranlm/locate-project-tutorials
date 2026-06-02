@@ -758,9 +758,12 @@
       z-index: 901;
       box-shadow: 0 0 0 9999px rgba(0,0,0,.45);
       border-radius: 6px;
-      transition: all .25s ease;
       pointer-events: none;
+      opacity: 0;
+      transition: opacity .22s ease, left .22s ease, top .22s ease, width .22s ease, height .22s ease;
     }
+
+    #tour-spotlight.visible { opacity: 1; }
 
     #tour-card {
       position: fixed;
@@ -871,6 +874,7 @@
     }
 
     .tour-next:hover { background: var(--ms-red-dark); }
+
   </style>
 </head>
 <body>
@@ -1365,14 +1369,14 @@
 
     function tourSpotlight(el) {
       const sp  = document.getElementById('tour-spotlight');
-      if (!el) { sp.style.display = 'none'; return; }
+      if (!el) { sp.classList.remove('visible'); return; }
       const r   = el.getBoundingClientRect();
       const PAD = 6;
-      sp.style.display  = 'block';
-      sp.style.left     = (r.left   - PAD) + 'px';
-      sp.style.top      = (r.top    - PAD) + 'px';
-      sp.style.width    = (r.width  + PAD * 2) + 'px';
-      sp.style.height   = (r.height + PAD * 2) + 'px';
+      sp.style.left   = (r.left   - PAD) + 'px';
+      sp.style.top    = (r.top    - PAD) + 'px';
+      sp.style.width  = (r.width  + PAD * 2) + 'px';
+      sp.style.height = (r.height + PAD * 2) + 'px';
+      sp.classList.add('visible');
     }
 
     function tourPosition(el, side) {
@@ -1452,7 +1456,7 @@
 
     function tourEnd() {
       document.getElementById('tour-card').classList.add('hidden');
-      document.getElementById('tour-spotlight').style.display = 'none';
+      document.getElementById('tour-spotlight').classList.remove('visible');
       document.getElementById('tour-overlay').classList.remove('active');
     }
 
@@ -1839,8 +1843,6 @@
     map.on('load', () => {
       updateZoomBadge();
       initGeoJSONLayers();
-      tourStart(); // show the guide on first load
-
       // Auto-load the default project geometry
       fetch('processed_geometry (1).geojson')
         .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
