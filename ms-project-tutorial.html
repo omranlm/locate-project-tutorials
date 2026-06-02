@@ -925,6 +925,11 @@
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
             </button>
+            <button class="btn btn-secondary" id="copy-tms-btn" title="Copy MapTiler tile URL" style="display:none">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -1155,6 +1160,7 @@
 
     const TITILER_BASE = 'https://titiler.hotosm.org/cog/WebMercatorQuad/tilejson.json';
     const OAM_COG_BASE = 'https://oin-hotosm-temp.s3.us-east-1.amazonaws.com';
+    let activeTileUrl  = null;
 
     async function fetchTileJSON(tileUrl) {
       let tjUrl = null;
@@ -1164,11 +1170,22 @@
         /^https?:\/\/tiles\.openaerialmap\.org\/([\w]+\/\d+\/[\w]+)\/\{z\}/
       );
       if (oamMatch) {
-        const path   = oamMatch[1]; // e.g. "690585b76415e43597ffd7ea/0/690585b76415e43597ffd7eb"
-        const cogUrl = `${OAM_COG_BASE}/${path}.tif`;
+        const cogUrl = `${OAM_COG_BASE}/${oamMatch[1]}.tif`;
         tjUrl = `${TITILER_BASE}?url=${encodeURIComponent(cogUrl)}`;
-      } else {
-        // Pattern 2: strip /{z}/{x}/{y}[.ext] and try the base URL
+      }
+
+      // Pattern 2: titiler tile URL → swap path to tilejson endpoint, keep ?url= param
+      if (!tjUrl) {
+        const titilerMatch = tileUrl.match(
+          /^(https?:\/\/[^/]+\/cog)\/tiles\/WebMercatorQuad\/\{z\}\/\{x\}\/\{y\}[^?]*(\?.*)?$/
+        );
+        if (titilerMatch) {
+          tjUrl = `${titilerMatch[1]}/WebMercatorQuad/tilejson.json${titilerMatch[2] || ''}`;
+        }
+      }
+
+      // Pattern 3: generic — strip /{z}/{x}/{y}[.ext] and try the base URL as TileJSON
+      if (!tjUrl) {
         const base = tileUrl.replace(/\/\{z\}\/\{x\}\/\{y\}(\.\w+)?$/, '');
         if (base !== tileUrl) tjUrl = base;
       }
@@ -1204,6 +1221,7 @@
 
       // Prefer the tile URL from TileJSON (titiler's working endpoint) over the raw input
       const tileUrl     = (tj && tj.tiles && tj.tiles[0]) ? tj.tiles[0] : url;
+      activeTileUrl = tileUrl;
       const tileScheme  = (tj && tj.scheme === 'tms') ? 'tms' : (scheme === 'tms' ? 'tms' : 'xyz');
 
       try {
@@ -1235,6 +1253,7 @@
         } else {
           showStatus('Layer added. No TileJSON found — navigate to the imagery manually.', 'info');
         }
+        document.getElementById('copy-tms-btn').style.display = '';
       } catch (e) {
         showStatus('Failed to add layer: ' + e.message, 'error');
       }
@@ -1246,6 +1265,8 @@
       setInfoBadge(null);
       hideStatus();
       document.getElementById('tms-url').value = '';
+      document.getElementById('copy-tms-btn').style.display = 'none';
+      activeTileUrl = null;
     }
 
     // ── Tile error feedback ───────────────────────────────────
@@ -1276,6 +1297,16 @@
     });
 
     document.getElementById('clear-btn').addEventListener('click', clearLayer);
+
+    document.getElementById('copy-tms-btn').addEventListener('click', async () => {
+      if (!activeTileUrl) return;
+      await navigator.clipboard.writeText(activeTileUrl);
+      const btn = document.getElementById('copy-tms-btn');
+      const prev = btn.innerHTML;
+      btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+      btn.style.color = 'var(--ms-red)';
+      setTimeout(() => { btn.innerHTML = prev; btn.style.color = ''; }, 1800);
+    });
 
     document.getElementById('tms-url').addEventListener('keydown', e => {
       if (e.key === 'Enter') document.getElementById('load-btn').click();
